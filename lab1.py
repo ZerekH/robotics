@@ -10,10 +10,15 @@ def drive_square(squares:int):
             time.sleep(.5)
             # stop
             my_robot.stop()
+
+            # SLEEP
+
             # turn 90 degrees(1.5708 radians) for 1 second
             my_robot.drive(0, 0, 1.5708)
-            time.sleep(1)
+            time.sleep(1.05)
             # stoping the rotation
             my_robot.stop()
+
+            # sleep
 
 drive_square(3)
