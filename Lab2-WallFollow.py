@@ -18,11 +18,25 @@ def find_min_dist(ranges, thetas):
     min_dist, min_angle = None, None
 
     # TODO: Find the length and angle of the shortest distance in the ray.
+    
+    # Complete the provided function, find_min_dist(), in wall_follower.py 
+    # so that it finds the length and angle of the shortest ray. For example, 
+    # if the smallest range in ranges is the tenth element at index 9, 
+    # the function should return the tuple ranges[9], thetas[9]
+
+    min_value = float('inf')
+    min_index = len(ranges)
+    for index, value in enumerate(ranges):
+        if value < min_value:
+            min_value = value
+            min_index = index
+    min_dist = ranges[index]
+    min_angle = thetas[index]
 
     return min_dist, min_angle
 
 
-def cross_product(v1, v2):
+def cross_product(v1, v2):  #two vectors of length 3, corresponding to the x, y, and z components of the input vectors
     """Compute the Cross Product between two vectors.
 
     Args:
@@ -32,7 +46,7 @@ def cross_product(v1, v2):
     Returns:
         list: The result of the cross product operation.
     """
-    res = np.zeros(3)
+    res = np.cross(v1, v2)
     # TODO: Compute the cross product.
     return res
 
