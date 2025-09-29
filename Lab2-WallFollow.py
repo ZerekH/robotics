@@ -4,7 +4,6 @@ from mbot_bridge.api import MBot
 
 
 def find_min_dist(ranges, thetas):
-
     """Finds the length and angle of the minimum ray in the scan.
 
     Make sure you ignore any rays with length 0! Those are invalid.
@@ -28,7 +27,7 @@ def find_min_dist(ranges, thetas):
     min_value = float('inf')
     min_index = len(ranges)
     for index, value in enumerate(ranges):
-        if value < min_value:
+        if 0 < value < min_value:
             min_value = value
             min_index = index
     min_dist = ranges[index]
@@ -37,8 +36,7 @@ def find_min_dist(ranges, thetas):
     return min_dist, min_angle
 
 
-# def cross_product(v1, vdar scan.
-#         ranges, thetas = robot.read_lidar()2):  #two vectors of length 3, corresponding to the x, y, and z components of the input vectors
+def cross_product(v1, v2):  #two vectors of length 3, corresponding to the x, y, and z components of the input vectors
     """Compute the Cross Product between two vectors.
 
     Args:
@@ -48,26 +46,25 @@ def find_min_dist(ranges, thetas):
     Returns:
         list: The result of the cross product operation.
     """
-    # res = np.cross(v1, v2)
+    res = np.cross(v1, v2)
     # TODO: Compute the cross product.
-    # return res
+    return res
 
 
 robot = MBot()
 setpoint = 0  # TODO: Pick your setpoint.
 # TODO: Declare any other variables you might need here.
 
-# try:
-    # while True:
-        # Read the latest li
+try:
+    while True:
+        # Read the latest lidar scan.
+        ranges, thetas = robot.read_lidar()
 
         # TODO: (P1.2) Write code to follow the nearest wall here.
         # Hint: You should use the functions cross_product and find_min_dist.
 
         # Optionally, sleep for a bit before reading a new scan.
-        # time.sleep(0.1)
-# except:
+        time.sleep(0.1)
+except:
     # Catch any exception, including the user quitting, and stop the robot.
-    # robot.stop()
-
-print(robot.read_lidar())
+    robot.stop()
