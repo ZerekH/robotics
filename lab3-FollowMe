@@ -2,87 +2,50 @@ import time
 import numpy as np
 from mbot_bridge.api import MBot
 
-
-# Get distance straight ahead
+# Get distance to wall
 def find_fwd_dist(ranges, thetas, window=5):
+    """Find the distance to the nearest object in front of the robot.
+
+    Args:
+        ranges (list): The ranges from the Lidar scan.
+        thetas (list): The angles from the Lidar scan.
+        window (int, optional): The window to average ranges over. Defaults to 5.
+
+    Returns:
+        float: The distance to the nearest obstacle in front of the robot.
+    """
+    # Grab the rays near the front of the scan.
     fwd_ranges = np.array(ranges[:window] + ranges[-window:])
     fwd_thetas = np.array(thetas[:window] + thetas[-window:])
+    # Grab just the positive values.
     valid_idx = (fwd_ranges > 0).nonzero()
     fwd_ranges = fwd_ranges[valid_idx]
     fwd_thetas = fwd_thetas[valid_idx]
+
+    # Compute forward distances.
     fwd_dists = fwd_ranges * np.cos(fwd_thetas)
-    return np.mean(fwd_dists) if len(fwd_dists) > 0 else float("inf")
+    return np.mean(fwd_dists)  # Return the mean.
 
 
-# Get average distance near a target angle
-def find_dist_at_angle(ranges, thetas, target_angle, angle_window=10):
-    """Measure average distance around a target angle (deg)."""
-    thetas = np.array(thetas)
-    ranges = np.array(ranges)
-
-    # Convert window to radians
-    window = np.radians(angle_window)
-
-    idx = np.where((thetas < target_angle + window) &
-                   (thetas > target_angle - window))[0]
-
-    side_ranges = ranges[idx]
-    valid_idx = (side_ranges > 0).nonzero()
-    side_ranges = side_ranges[valid_idx]
-
-    return np.mean(side_ranges) if len(side_ranges) > 0 else float("inf")
-
-
-# Initialize robot
+# Initialize a robot object.
 robot = MBot()
-
-# Desired distances
-fwd_setpoint = 0.5     # meters away from obstacles in front
-side_setpoint = 0.5    # meters away from whichever wall is closer
-
-# Controller gains
-Kp_fwd = 0.5
-Kp_side = 1.0
-max_speed = 0.2
-max_turn = 1.0
+setpoint = 0  # TODO: Pick your setpoint.
 
 try:
+    # Loop forever.
     while True:
-        # 1. Read the latest Lidar scan
+        # Read the latest Lidar scan.
         ranges, thetas = robot.read_lidar()
 
-        # 2. Measure distances
+        # Get the distance to the wall in front of the robot.
         dist_to_wall = find_fwd_dist(ranges, thetas)
-        dist_right = find_dist_at_angle(ranges, thetas, -np.pi/2)  # -90°
-        dist_left = find_dist_at_angle(ranges, thetas, np.pi/2)    # +90°
 
-        # 3. Choose closer wall
-        if dist_left < dist_right:
-            side_error = side_setpoint - dist_left
-            follow_side = "left"
-        else:
-            side_error = side_setpoint - dist_right
-            follow_side = "right"
+        # TODO: Implement the follow me controller to drive the robot based on
+        # the distance to the wall in front.
 
-        # 4. Forward control
-        fwd_error = fwd_setpoint - dist_to_wall
-        v = Kp_fwd * fwd_error
-        v = np.clip(v, -max_speed, max_speed)
-
-        # 5. Angular control (sign depends on which wall we follow)
-        if follow_side == "left":
-            w = -Kp_side * side_error   # turn away if too close to left
-        else:
-            w = Kp_side * side_error    # turn away if too close to right
-        w = np.clip(w, -max_turn, max_turn)
-
-        # 6. Send velocity command
-        robot.set_velocity(v, w)
-
-        # 7. Sleep
+        # Optionally, sleep for a bit before reading a new scan.
         time.sleep(0.1)
 
 except:
+    # Catch any exception, including the user quitting, and stop the robot.
     robot.stop()
-
-
