@@ -1,0 +1,77 @@
+import time
+import numpy as np
+from mbot_bridge.api import MBot
+
+def find_fwd_dist(ranges, thetas, window=10):
+    """Find the distance to the nearest object in front of the robot.
+    Args:
+        ranges: The ranges from the Lidar scan.
+        thetas: The angles from the Lidar scan.
+        window: The window to average ranges over.
+    Returns:
+        Average distance to objects in front, or None if no valid readings.
+    """
+    # Grab the rays near the front of the scan   (this will need to change for 2d!!)
+    fwd_ranges = np.array(ranges[:window] + ranges[-window:])
+    fwd_thetas = np.array(thetas[:window] + thetas[-window:])
+    
+    # get positive values
+    valid_idx = (fwd_ranges > 0).nonzero()
+    fwd_ranges = fwd_ranges[valid_idx]
+    fwd_thetas = fwd_thetas[valid_idx]
+    
+    if len(fwd_ranges) == 0:
+        return None
+    
+    # Calculate forward distances
+    fwd_dists = fwd_ranges * np.cos(fwd_thetas)
+    return np.mean(fwd_dists)
+
+# Initialize robot
+robot = MBot()
+
+# parameters
+TARGET_DISTANCE = 0.4 # Target distance  (meters)
+SPEED = 0.4           
+
+print("Simple follower started!")
+print(f"Target distance: {TARGET_DISTANCE}m")
+print("Stand in front of the robot. Press Ctrl+C to stop.\n")
+
+try:
+    while True:
+        # SCAN: Read lidar
+        ranges, thetas = robot.read_lidar()
+        
+        # Get distance to target
+        dist = find_fwd_dist(ranges, thetas)
+        
+        if dist is None:
+            # No valid readings - stop
+            robot.drive(0, 0, 0)
+            print("No person detected - waiting...")
+            time.sleep(0.1)
+            continue
+        
+        # DRIVE: Move based on distance
+        if dist > TARGET_DISTANCE + 0.1:
+            # Too far - move forward
+            robot.drive(SPEED, 0, 0)
+            print(f"Forward: {dist:.2f}m")
+        elif dist < TARGET_DISTANCE - 0.1:
+            # Too close - move backward
+            robot.drive(-SPEED, 0, 0)
+            print(f"Backward: {dist:.2f}m")
+        else:
+            # Just right - stop
+            robot.drive(0, 0, 0)
+            print(f"Stop: {dist:.2f}m ✓")
+        
+        time.sleep(0.1)
+
+except KeyboardInterrupt:
+    print("\nStopping robot...")
+    robot.stop()
+except Exception as e:
+    print(f"\nError: {e}")
+    robot.stop()
