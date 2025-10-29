@@ -2,78 +2,91 @@ import time
 import numpy as np
 from mbot_bridge.api import MBot
 
-
-def find_min_angle(ranges, thetas):
+def find_min_dist(ranges, thetas):
     """Finds the length and angle of the minimum ray in the scan.
-
     Make sure you ignore any rays with length 0! Those are invalid.
-
     Args:
         ranges (list): The length of each ray in the Lidar scan.
         thetas (list): The angle of each ray in the Lidar scan.
-
     Returns:
         tuple: The length and angle of the shortest ray in the Lidar scan.
     """
-    min_dist, min_angle = None, None
-
-    # TODO: Find the length and angle of the shortest distance in the ray.
+    ranges = np.array(ranges)
+    thetas = np.array(thetas)
     
-    # Complete the provided function, find_min_dist(), in wall_follower.py 
-    # so that it finds the length and angle of the shortest ray. For example, 
-    # if the smallest range in ranges is the tenth element at index 9, 
-    # the function should return the tuple ranges[9], thetas[9]
-
-    min_value = float('inf')
-    min_index = len(ranges)
-    for index, value in enumerate(thetas):
-        if 0 < value < min_value:
-            min_value = value
-            min_index = index
-    min_angle = thetas[index]
-    min_dist = ranges[index]
-
+    # Filter out invalid readings (0 or negative)
+    valid_idx = ranges > 0
+    valid_ranges = ranges[valid_idx]
+    valid_thetas = thetas[valid_idx]
+    
+    if len(valid_ranges) == 0:
+        return None, None
+    
+    # Find minimum distance
+    min_idx = np.argmin(valid_ranges)
+    min_dist = valid_ranges[min_idx]
+    min_angle = valid_thetas[min_idx]
+    
     return min_dist, min_angle
 
-
 robot = MBot()
-setpoint = 0  # TODO: Pick your setpoint.
+
+# Simple parameters
+TARGET_DISTANCE = 0.1     # Target distance to maintain (meters)
+DISTANCE_TOLERANCE = 0  # Acceptable range around target
+SPEED = 0.4                # How fast to move
+
 
 try:
     while True:
-        # Read the latest Lidar scan.
+        # Read the latest Lidar scan
         ranges, thetas = robot.read_lidar()
-
-        # Get the distance and angle to the wall.
-        dist_to_wall, angle_to_wall = find_min_angle(ranges, thetas)
-
-        # TODO: Implement the 2D Follow Me controller
-        # Hint: Look at your code from follow_1D
-        # Hint: When you compute the velocity command, you might find the functions
-        # np.sin(value) and np.cos(value) helpful!\
-
-        # F(x) = F cos(angle)
-        # F(y) = F sin(angle)
-        # negative if moving in negative quadrents
-        # ++, 0 -> 1.5708
-        if 0 < angle_to_wall <= 1.5708:
-            x = np.cos(angle_to_wall)
-            y = np.sin(angle_to_wall)
-        # +-, 1.5708 -> 3.14159
-        elif 1.5708 < angle_to_wall <= 3.14159:
-            x = np.cos(angle_to_wall)
-            y = np.sin(angle_to_wall)
-        # --, 3.14159 -> 4.71239
-        elif 3.14159 < angle_to_wall <= 4.71239:
-            x = np.cos(angle_to_wall)
-            y = np.sin(angle_to_wall)
-        # -+, 4.71239 -> 6.28319
-        elif 4.71239 < angle_to_wall <= 6.28319:
-            x = np.cos(angle_to_wall)
-            y = np.sin(angle_to_wall)
-
-        # Optionally, sleep for a bit before reading a new scan.
+        
+        # Get the distance and angle to the closest object
+        dist_to_object, angle_to_object = find_min_dist(ranges, thetas)
+        
+        if dist_to_object is None:
+            # No valid readings - stop
+            robot.drive(0, 0, 0)
+            print("No object detected")
+            time.sleep(0.1)
+            continue
+        
+        # Calculate how far off we are from target distance
+        distance_error = dist_to_object - TARGET_DISTANCE
+        
+        # Decide whether to move toward or away from object
+        if distance_error > DISTANCE_TOLERANCE:
+            # Too far - move toward object
+            move_speed = SPEED
+            status = "Moving toward"
+        elif distance_error < DISTANCE_TOLERANCE:
+            # Too close - move away from object
+            move_speed = -SPEED
+            status = "Moving away"
+        else:
+            # stop
+            move_speed = 0
+            status = "Stopped"
+        
+        # Convert polar (distance, angle) to Cartesian (vx, vy) velocities
+        # The robot should move in the direction of the object
+        vx = move_speed * np.cos(angle_to_object)  # Forward/backward component
+        vy = move_speed * np.sin(angle_to_object)  # Left/right component
+        
+        # Send drive command (vx, vy, wz) - no turning (wz=0)
+        robot.drive(vx, vy, 0)
+        
+        # Print status
+        angle_deg = np.degrees(angle_to_object)
+        print(f"{status}: {dist_to_object:.2f}m at {angle_deg:+.1f}° | "
+              f"vx: {vx:.2f}, vy: {vy:.2f}")
+        
         time.sleep(0.1)
-except:
-    # Catch any exception, including the user quitting, and stop the robot.
+
+except KeyboardInterrupt:
+    print("\nStopping robot...")
+    robot.stop()
+except Exception as e:
+    print(f"\nError: {e}")
     robot.stop()

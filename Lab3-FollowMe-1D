@@ -65,7 +65,7 @@ try:
         else:
             # Just right - stop
             robot.drive(0, 0, 0)
-            print(f"Stop: {dist:.2f}m ✓")
+            print(f"Stop: {dist:.2f}m ▀")
         
         time.sleep(0.1)
 
