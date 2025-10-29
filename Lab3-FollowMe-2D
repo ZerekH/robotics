@@ -3,7 +3,7 @@ import numpy as np
 from mbot_bridge.api import MBot
 
 
-def find_min_dist(ranges, thetas):
+def find_min_angle(ranges, thetas):
     """Finds the length and angle of the minimum ray in the scan.
 
     Make sure you ignore any rays with length 0! Those are invalid.
@@ -18,6 +18,20 @@ def find_min_dist(ranges, thetas):
     min_dist, min_angle = None, None
 
     # TODO: Find the length and angle of the shortest distance in the ray.
+    
+    # Complete the provided function, find_min_dist(), in wall_follower.py 
+    # so that it finds the length and angle of the shortest ray. For example, 
+    # if the smallest range in ranges is the tenth element at index 9, 
+    # the function should return the tuple ranges[9], thetas[9]
+
+    min_value = float('inf')
+    min_index = len(ranges)
+    for index, value in enumerate(thetas):
+        if 0 < value < min_value:
+            min_value = value
+            min_index = index
+    min_angle = thetas[index]
+    min_dist = ranges[index]
 
     return min_dist, min_angle
 
@@ -31,12 +45,32 @@ try:
         ranges, thetas = robot.read_lidar()
 
         # Get the distance and angle to the wall.
-        dist_to_wall, angle_to_wall = find_min_dist(ranges, thetas)
+        dist_to_wall, angle_to_wall = find_min_angle(ranges, thetas)
 
         # TODO: Implement the 2D Follow Me controller
         # Hint: Look at your code from follow_1D
         # Hint: When you compute the velocity command, you might find the functions
-        # np.sin(value) and np.cos(value) helpful!
+        # np.sin(value) and np.cos(value) helpful!\
+
+        # F(x) = F cos(angle)
+        # F(y) = F sin(angle)
+        # negative if moving in negative quadrents
+        # ++, 0 -> 1.5708
+        if 0 < angle_to_wall <= 1.5708:
+            x = np.cos(angle_to_wall)
+            y = np.sin(angle_to_wall)
+        # +-, 1.5708 -> 3.14159
+        elif 1.5708 < angle_to_wall <= 3.14159:
+            x = np.cos(angle_to_wall)
+            y = np.sin(angle_to_wall)
+        # --, 3.14159 -> 4.71239
+        elif 3.14159 < angle_to_wall <= 4.71239:
+            x = np.cos(angle_to_wall)
+            y = np.sin(angle_to_wall)
+        # -+, 4.71239 -> 6.28319
+        elif 4.71239 < angle_to_wall <= 6.28319:
+            x = np.cos(angle_to_wall)
+            y = np.sin(angle_to_wall)
 
         # Optionally, sleep for a bit before reading a new scan.
         time.sleep(0.1)
