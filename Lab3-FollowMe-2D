@@ -22,7 +22,7 @@ def find_min_dist(ranges, thetas):
     if len(valid_ranges) == 0:
         return None, None
     
-    # Find minimum distance
+    # Find min dist
     min_idx = np.argmin(valid_ranges)
     min_dist = valid_ranges[min_idx]
     min_angle = valid_thetas[min_idx]
@@ -31,7 +31,7 @@ def find_min_dist(ranges, thetas):
 
 robot = MBot()
 
-# Simple parameters
+
 TARGET_DISTANCE = 0.1     # Target distance to maintain (meters)
 DISTANCE_TOLERANCE = 0  # Acceptable range around target
 SPEED = 0.4                # How fast to move
@@ -46,33 +46,24 @@ try:
         dist_to_object, angle_to_object = find_min_dist(ranges, thetas)
         
         if dist_to_object is None:
-            # No valid readings - stop
+            # check if no valid readings - stop
             robot.drive(0, 0, 0)
             print("No object detected")
             time.sleep(0.1)
             continue
         
-        # Calculate how far off we are from target distance
-        distance_error = dist_to_object - TARGET_DISTANCE
-        
-        # Decide whether to move toward or away from object
-        if distance_error > DISTANCE_TOLERANCE:
-            # Too far - move toward object
+        angle_error = np.abs(angle_to_object)
+
+        if angle_error > np.radians(2):  # If angle > 2 degrees
             move_speed = SPEED
             status = "Moving toward"
-        elif distance_error < DISTANCE_TOLERANCE:
-            # Too close - move away from object
-            move_speed = -SPEED
-            status = "Moving away"
         else:
-            # stop
             move_speed = 0
             status = "Stopped"
         
-        # Convert polar (distance, angle) to Cartesian (vx, vy) velocities
-        # The robot should move in the direction of the object
-        vx = move_speed * np.cos(angle_to_object)  # Forward/backward component
-        vy = move_speed * np.sin(angle_to_object)  # Left/right component
+        # Convert polar (distance, angle) to Cartesian (vx, vy) 
+        vx = move_speed * np.cos(angle_to_object)  # Forward/backward 
+        vy = move_speed * np.sin(angle_to_object)  # Left/right 
         
         # Send drive command (vx, vy, wz) - no turning (wz=0)
         robot.drive(vx, vy, 0)
