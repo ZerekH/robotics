@@ -15,10 +15,6 @@ def find_min_dist(ranges, thetas):
     return valid_ranges[min_idx], valid_thetas[min_idx]
 
 
-def cross_product(v1, v2):
-    return np.cross(v1, v2)
-
-
 # ----------------------------
 # Control parameters
 # ----------------------------
@@ -62,7 +58,7 @@ try:
             time.sleep(0.1)
             continue
 
-        # Average distances
+        # Average front distance for obstacle detection
         front_dist = get_sector_distance(ranges, thetas, 0, SCAN_ANGLE)
 
         # ====================
@@ -70,24 +66,13 @@ try:
         # ====================
         if state == "SEARCHING":
             if dist_to_wall < 1.0:
-                print("Wall found! Switching to ALIGNING.")
-                state = "ALIGNING"
+                print("Wall found! Switching to FOLLOWING.")
+                state = "FOLLOWING"
             else:
                 robot.drive(SPEED, 0, 0)
                 print("Searching for wall...")
                 time.sleep(0.1)
                 continue
-
-        elif state == "ALIGNING":
-            distance_error = dist_to_wall - WALL_SETPOINT
-            correction_speed = -KP * distance_error  # move toward/away from wall
-            vx = 0.0
-            vy = correction_speed
-            if abs(distance_error) < 0.05:
-                print("Aligned with wall. Switching to FOLLOWING.")
-                state = "FOLLOWING"
-            robot.drive(vx, vy, 0)
-            print(f"Aligning: dist={dist_to_wall:.2f}, err={distance_error:+.2f}")
 
         elif state == "FOLLOWING":
             distance_error = dist_to_wall - WALL_SETPOINT
@@ -99,7 +84,6 @@ try:
                 continue
 
             # Compute wall tangent vector (parallel to wall)
-            # Wall vector points from robot → wall, so tangent is 90° rotated
             tangent_angle = angle_to_wall + np.pi / 2
 
             # Move tangentially while correcting distance perpendicular to wall
