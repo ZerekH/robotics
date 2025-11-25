@@ -11,7 +11,7 @@ def find_fwd_dist(ranges, thetas, window=10):
     Returns:
         Average distance to objects in front, or None if no valid readings.
     """
-    # Grab the rays near the front of the scan   (this will need to change for 2d!!)
+    
     fwd_ranges = np.array(ranges[:window] + ranges[-window:])
     fwd_thetas = np.array(thetas[:window] + thetas[-window:])
     
@@ -23,15 +23,14 @@ def find_fwd_dist(ranges, thetas, window=10):
     if len(fwd_ranges) == 0:
         return None
     
-    # Calculate forward distances
+    #forward distances
     fwd_dists = fwd_ranges * np.cos(fwd_thetas)
     return np.mean(fwd_dists)
 
-# Initialize robot
 robot = MBot()
 
 # parameters
-TARGET_DISTANCE = 0.4 # Target distance  (meters)
+TARGET_DISTANCE = 0.4 
 SPEED = 0.4           
 
 print("Simple follower started!")
@@ -40,37 +39,36 @@ print("Stand in front of the robot. Press Ctrl+C to stop.\n")
 
 try:
     while True:
-        # SCAN: Read lidar
+        
         ranges, thetas = robot.read_lidar()
         
-        # Get distance to target
+       
         dist = find_fwd_dist(ranges, thetas)
         
         if dist is None:
-            # No valid readings - stop
+            
             robot.drive(0, 0, 0)
-            print("No person detected - waiting...")
+            print("Nothing detected")
             time.sleep(0.1)
             continue
         
-        # DRIVE: Move based on distance
+        
         if dist > TARGET_DISTANCE + 0.1:
-            # Too far - move forward
+            
             robot.drive(SPEED, 0, 0)
-            print(f"Forward: {dist:.2f}m")
         elif dist < TARGET_DISTANCE - 0.1:
-            # Too close - move backward
+            
             robot.drive(-SPEED, 0, 0)
-            print(f"Backward: {dist:.2f}m")
+            
         else:
-            # Just right - stop
+            
             robot.drive(0, 0, 0)
-            print(f"Stop: {dist:.2f}m ▀")
+        
         
         time.sleep(0.1)
 
 except KeyboardInterrupt:
-    print("\nStopping robot...")
+    print("\nStopping")
     robot.stop()
 except Exception as e:
     print(f"\nError: {e}")

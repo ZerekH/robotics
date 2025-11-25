@@ -14,7 +14,7 @@ def find_min_dist(ranges, thetas):
     ranges = np.array(ranges)
     thetas = np.array(thetas)
     
-    # Filter out invalid readings (0 or negative)
+    
     valid_idx = ranges > 0
     valid_ranges = ranges[valid_idx]
     valid_thetas = thetas[valid_idx]
@@ -22,7 +22,7 @@ def find_min_dist(ranges, thetas):
     if len(valid_ranges) == 0:
         return None, None
     
-    # Find min dist
+   
     min_idx = np.argmin(valid_ranges)
     min_dist = valid_ranges[min_idx]
     min_angle = valid_thetas[min_idx]
@@ -32,51 +32,50 @@ def find_min_dist(ranges, thetas):
 robot = MBot()
 
 
-TARGET_DISTANCE = 0.1     # Target distance to maintain (meters)
-DISTANCE_TOLERANCE = 0  # Acceptable range around target
-SPEED = 0.4                # How fast to move
+TARGET_DISTANCE = 0.1    
+DISTANCE_TOLERANCE = 0 
+SPEED = 0.4               
 
 
 try:
     while True:
-        # Read the latest Lidar scan
+        
         ranges, thetas = robot.read_lidar()
         
-        # Get the distance and angle to the closest object
+        # angle to the closest object
         dist_to_object, angle_to_object = find_min_dist(ranges, thetas)
         
         if dist_to_object is None:
-            # check if no valid readings - stop
+            
             robot.drive(0, 0, 0)
-            print("No object detected")
+            print("Nothing detected")
             time.sleep(0.1)
             continue
         
         angle_error = np.abs(angle_to_object)
 
-        if angle_error > np.radians(2):  # If angle > 2 degrees
+        if angle_error > np.radians(2):  
             move_speed = SPEED
             status = "Moving toward"
         else:
             move_speed = 0
             status = "Stopped"
         
-        # Convert polar (distance, angle) to Cartesian (vx, vy) 
+        # (distance, angle) to (vx, vy) 
         vx = move_speed * np.cos(angle_to_object)  # Forward/backward 
         vy = move_speed * np.sin(angle_to_object)  # Left/right 
         
-        # Send drive command (vx, vy, wz) - no turning (wz=0)
+        # drive
         robot.drive(vx, vy, 0)
         
-        # Print status
+       
         angle_deg = np.degrees(angle_to_object)
-        print(f"{status}: {dist_to_object:.2f}m at {angle_deg:+.1f}° | "
-              f"vx: {vx:.2f}, vy: {vy:.2f}")
+        
         
         time.sleep(0.1)
 
 except KeyboardInterrupt:
-    print("\nStopping robot...")
+    print("\nStopping")
     robot.stop()
 except Exception as e:
     print(f"\nError: {e}")
